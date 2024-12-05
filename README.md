@@ -1,4 +1,7 @@
-# Brenes Final Independent Project
+# Final Independent Project
+created by: Brandon Brenes
+date created: 2024/12/04
+date last edited: 2024/12/04
 
 ['Link to Final Independent Project`](https://brenesb.shinyapps.io/cnp_aloha_app/)
 
