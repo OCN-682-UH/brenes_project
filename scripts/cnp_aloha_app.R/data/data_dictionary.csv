@@ -1,0 +1,13 @@
+C:N:P_data_dictionary,
+,
+Variable,Description
+date,Date data was collected in mmddyy format
+crn,HOT cruise number (#)
+julian,The Julian date
+c_deep_ mean, Average umol/kg of particulate carbon in water mass between 80-120m
+c_deep_StdDev,Standard deviation of the c_deep_mean 
+c_shallow_mean,Average umol/kg of particulate carbon in water mass between 80-120m
+c_shallow_ StdDev,Standard deviation of the c_shallow_mean 
+c,Abbreviation for carbon
+n,Abbreviation for nitrogen
+p,Abbreviation for phosphorus

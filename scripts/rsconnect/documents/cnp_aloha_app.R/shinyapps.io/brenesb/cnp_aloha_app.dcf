@@ -1,0 +1,12 @@
+name: cnp_aloha_app
+title: cnp_aloha_app
+username: brenesb
+account: brenesb
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13526786
+bundleId: 9464700
+url: https://brenesb.shinyapps.io/cnp_aloha_app/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

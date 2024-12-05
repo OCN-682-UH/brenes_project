@@ -1,0 +1,12 @@
+name: CNP_ALOHA
+title: CNP_ALOHA
+username: brenesb
+account: brenesb
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13526644
+bundleId: 9464468
+url: https://brenesb.shinyapps.io/CNP_ALOHA/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
