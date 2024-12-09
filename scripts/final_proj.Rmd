@@ -1,0 +1,379 @@
+---
+title: "Particle C:N:P stoichiometry at Station ALOHA"
+author: "Brandon Brenes"
+date: "2024-12-09"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme:
+      bootswatch: flatly
+    highlight: tango
+pdf_document:
+  toc: true
+  highlight: tango
+  latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Description
+
+This Shiny application provides an interactive analysis of C:N:P stoichiometry using data from the Hawaii Ocean Time-series. The app allows users to explore relationships between carbon, nitrogen, and phosphorus in different ocean depths and across seasons through various visualizations.
+
+<br>
+
+## Libraries
+
+```{r}
+
+# libraries #
+
+library(here)
+library(shiny)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(rsconnect)
+
+
+```
+
+<br>
+
+## Data
+
+### Load data
+
+```{r}
+
+# load data #
+
+carbon_data <- read.csv(here("data", "carbon_data.csv"))
+nitrogen_data <- read.csv(here("data", "nitrogen_data.csv"))
+phosphorus_data <- read.csv(here("data", "phosphorus_data.csv"))
+
+# display #
+head(carbon_data)
+head(nitrogen_data)
+head(phosphorus_data)
+
+```
+
+<br>
+
+### Data manipulation
+
+#### Joining datasets
+
+The C,N and P datasets are joined by the crn (cruise number) column using inner_join from **lubridate** to create a comprehensive C:N:P dataset. Duplicate columns such as 'julian' and 'date' are removed.
+
+
+```{r}
+
+# join all datasets
+
+CNP_data <- carbon_data %>% # join by crn, duplicate columns such as 'julian' and 'date' are removed
+  inner_join(nitrogen_data %>% select(-date, -julian), by = "crn") %>%
+  inner_join(phosphorus_data %>% select(-date, -julian), by = "crn")
+
+
+# display #
+
+head(CNP_data)
+
+```
+
+<br>
+
+#### Season column added
+Then a seasons column is made using the months from the date and the lubridate package.
+
+```{r}
+
+CNP_data <- CNP_data %>%
+  mutate(
+    date = mdy(date),  # convert date to mdy format
+    season = case_when( # make season column, separate into seasons when month equals x
+      month(date) %in% c(3, 4, 5) ~ "Spring",
+      month(date) %in% c(6, 7, 8) ~ "Summer",
+      month(date) %in% c(9, 10, 11) ~ "Fall",
+      month(date) %in% c(12, 1, 2) ~ "Winter"
+    )
+  )
+
+# display #
+head(CNP_data)
+
+```
+
+
+<br>
+
+## Plot
+
+### Heatmap
+```{r}
+
+ggplot(CNP_data, aes(x = c_deep_mean, y = n_deep_mean)) +
+  geom_tile(aes(fill = ..count..), stat = "bin2d", bins = 30) +
+  scale_fill_gradient(low = "white", high = "red2") +
+  labs(x = "C (Deep Mean)", y = "N (Deep Mean)", title = "C:N Heatmap in the Deep Ocean") +
+  theme_minimal()
+
+```
+
+### Box Plot
+```{r}
+deep_data <- CNP_data %>%
+  select(c_shallow_mean, n_deep_mean, p_deep_mean) %>%
+  pivot_longer(cols = everything(), names_to = "Element", values_to = "Value") %>%
+  mutate(Element = recode(Element,
+                          "c_shallow_mean" = "Carbon",
+                          "n_deep_mean" = "Nitrogen",
+                          "p_deep_mean" = "Phosphorus"))
+
+custom_colors <- c("Carbon" = "#F9C74F", "Nitrogen" = "#F94144", "Phosphorus" = "#577590")
+
+ggplot(deep_data, aes(x = Element, y = Value, fill = Element)) +
+  geom_boxplot() +
+  facet_wrap(~Element, scales = "free") +
+  labs(title = "Box Plot of Carbon, Nitrogen, and Phosphorus (Deep Depth)",
+       x = "Element", y = "Value (umol/kg)") +
+  theme_minimal() +
+  scale_fill_manual(values = custom_colors)
+
+```
+
+<br>
+
+## Shiny App Code
+
+Below is the complete Shiny app implementation.
+
+<br>
+
+### UI
+
+The app's user interface includes three sections using **ui<-fluidPage()** : Heatmap, Box Plot, and C:N:P averages.
+
+```{r}
+
+# user interface
+
+ui <- fluidPage(
+  # add custom css to style the app (e.g., add spacing between sections)
+  tags$style(HTML("
+    .layout-spacing {
+      margin-bottom: 30px; /* adds space between sections */
+    }
+  ")),
+  
+  # app title #
+  titlePanel("C:N:P of Particles at Station ALOHA"),
+  
+  
+  ### section for heatmap select input ###
+  
+    div(
+    class = "layout-spacing", # apply spacing style for better layout
+    sidebarLayout(
+      # sidebar for user inputs related to the heatmap
+      sidebarPanel(
+        selectInput(
+          "element1", 
+          "Select First Element (x-axis)", 
+          choices = c("Carbon" = "C", "Nitrogen" = "N", "Phosphorus" = "P") # dropdown to select x-axis element
+        ),
+        selectInput(
+          "element2", 
+          "Select Second Element (y-axis)", 
+          choices = c("Carbon" = "C", "Nitrogen" = "N", "Phosphorus" = "P") # dropdown to select y-axis element
+        ),
+        selectInput(
+          "depth_heatmap", 
+          "Select Depth", 
+          choices = c("Shallow", "Deep") # dropdown to select depth level for heatmap
+        ),
+        selectInput(
+          "season_heatmap", 
+          "Select Season", 
+          choices = c("All", na.omit(unique(CNP_data$season))) # dropdown to select season for heatmap, excludes missing values
+        )
+      ),
+      
+ ### main panel to display the heatmap plot ###
+ 
+      mainPanel(
+        plotOutput("heatmap_plot") # outputs the heatmap plot to the ui
+      )
+    )
+  ),
+  
+  
+ ### section for box plot input selection ###
+  
+  div(
+    class = "layout-spacing", # apply spacing style for better layout
+    sidebarLayout(
+      # sidebar for user inputs related to the box plot
+      sidebarPanel(
+        selectInput(
+          "depth", 
+          "Select Depth", 
+          choices = c("Shallow", "Deep") # dropdown to select depth level for box plot
+        ),
+        selectInput(
+          "season", 
+          "Select Season", 
+          choices = c("All", na.omit(unique(CNP_data$season))) # dropdown to select season for box plot, excludes missing values
+        )
+      ),
+      
+### main panel to display the box plot ###
+      
+      mainPanel(
+        plotOutput("box_plot") # outputs the box plot to the ui
+      )
+    )
+  ),
+  
+  
+  ### section for c:n:p averages input selection ###
+  
+  div(
+    class = "layout-spacing", # apply spacing style for better layout
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(
+          "depth_avg", 
+          "Select Depth", 
+          choices = c("Shallow", "Deep") # dropdown to select depth level for averages
+        ),
+        selectInput(
+          "season_avg", 
+          "Select Season", 
+          choices = c("All", na.omit(unique(CNP_data$season))) # dropdown to select season for averages, excludes missing values
+        )
+      ),
+      
+### main panel to display the computed averages ###
+
+      mainPanel(
+        uiOutput("avg_display") # dynamically displays the computed averages
+      )
+    )
+  )
+)
+
+
+```
+
+<br>
+
+### Server
+
+The server processes the inputs (seasons and depths) and renders the visualizations (box plot, heatmap and averages via text) dynamically.
+
+```{r}
+
+server <- function(input, output) {  
+  
+# OUTPUT: heatmap rendered
+  
+  output$heatmap_plot <- renderPlot({
+    # filter data based on selected depth
+    filtered_data <- CNP_data %>%
+      filter(depth == input$depth_heatmap)
+    
+# INPUT: filter further by season if a specific season is selected
+    
+    if (input$season_heatmap != "All") {
+      filtered_data <- filtered_data %>% filter(season == input$season_heatmap)
+    }
+    
+# generate heatmap using ggplot2
+    ggplot(filtered_data, aes_string(x = input$element1, y = input$element2)) +
+      geom_bin2d(bins = 30) + # create a 2d binned heatmap with 30 bins
+      scale_fill_gradient(low = "blue", high = "red") + # gradient color for heatmap
+      labs(
+        x = paste("Concentration of", input$element1), # dynamic x-axis label
+        y = paste("Concentration of", input$element2), # dynamic y-axis label
+        fill = "Count"
+      ) +
+      theme_minimal() # use a clean minimal theme for better readability
+  })
+  
+  
+  
+# OUTPUT: boxplot rendered 
+  
+  # render the box plot based on user inputs
+  output$box_plot <- renderPlot({
+    # filter data based on selected depth
+    filtered_data <- CNP_data %>%
+      filter(depth == input$depth
+             )
+    
+# INPUT: season and depth
+    
+    # filter further by season if a specific season is selected
+    if (input$season != "All") {
+      filtered_data <- filtered_data %>% filter(season == input$season)
+    }
+    
+# generate box plot using ggplot2
+    ggplot(filtered_data, aes(x = depth, y = ratio_C_N_P, fill = season)) +
+      geom_boxplot() + # create a box plot
+      labs(
+        x = "Depth", # label for x-axis
+        y = "C:N:P Ratio", # label for y-axis
+        fill = "Season"
+      ) +
+      theme_classic() # use a classic theme for clear box plot presentation
+  })
+  
+  
+  
+# OUTPUT: render the average display based on user inputs
+  
+  output$avg_display <- renderUI({
+    # filter data based on selected depth
+    filtered_data <- CNP_data %>%
+      filter(depth == input$depth_avg)
+    
+    # filter further by season if a specific season is selected
+    
+# INPUT: select for season and depth   
+    
+# check if the selected season is not "All"
+    if (input$season_avg != "All") {
+      # filter the data to include only rows that match the selected season
+      filtered_data <- filtered_data %>% filter(season == input$season_avg)
+    }
+
+# compute averages for c, n, and p
+    avg_C <- mean(filtered_data$C, na.rm = TRUE) # average carbon concentration
+    avg_N <- mean(filtered_data$N, na.rm = TRUE) # average nitrogen concentration
+    avg_P <- mean(filtered_data$P, na.rm = TRUE) # average phosphorus concentration
+    
+    
+# create ui output displaying the averages with rounded values based on avg_element
+    
+    tagList(
+      h4("Average Elemental Ratios:"), # header title
+      p(paste("Average Carbon (C):", round(avg_C, 2))), # round to nearest 1
+      p(paste("Average Nitrogen (N):", round(avg_N, 2))), 
+      p(paste("Average Phosphorus (P):", round(avg_P, 2)))
+    )
+  })
+}
+
+### shinyApp(ui = ui, server = server) - run the app ###
+
+```
+
