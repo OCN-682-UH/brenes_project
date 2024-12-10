@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ## Description
 
-This Shiny application provides an interactive analysis of C:N:P stoichiometry using data from the Hawaii Ocean Time-series. The app allows users to explore relationships between carbon, nitrogen, and phosphorus in different ocean depths and across seasons through various visualizations.
+This Shiny application provides an interactive analysis of C:N:P stoichiometry using data from the Hawaii Ocean Time-series. The app allows users to explore relationships between carbon, nitrogen, and phosphorus in the euphotic zone at different ocean depths and across seasons through various visualizations.
 
 <br>
 
@@ -39,7 +39,6 @@ library(tidyverse)
 library(ggplot2)
 library(lubridate)
 library(rsconnect)
-
 
 ```
 
@@ -296,7 +295,7 @@ server <- function(input, output) {
       filtered_data <- filtered_data %>% filter(season == input$season_heatmap)
     }
     
-# generate heatmap using ggplot2
+# make heatmap using ggplot2
     ggplot(filtered_data, aes_string(x = input$element1, y = input$element2)) +
       geom_bin2d(bins = 30) + # create a 2d binned heatmap with 30 bins
       scale_fill_gradient(low = "blue", high = "red") + # gradient color for heatmap
@@ -326,7 +325,7 @@ server <- function(input, output) {
       filtered_data <- filtered_data %>% filter(season == input$season)
     }
     
-# generate box plot using ggplot2
+# make box plot using ggplot2
     ggplot(filtered_data, aes(x = depth, y = ratio_C_N_P, fill = season)) +
       geom_boxplot() + # create a box plot
       labs(
