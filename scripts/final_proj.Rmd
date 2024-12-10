@@ -19,6 +19,14 @@ pdf_document:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
+![Fig: Rosette sampler](https://essic.umd.edu/wp-content/uploads/2022/02/niskin.jpg)
+
+<br>
+
+![Sigman et al. 2012](https://figures.semanticscholar.org/e18b0cd926f4a7f818312119e2eb1d52feb2781d/3-Figure2-1.png)
+
+<br>
+
 ## Description
 
 This Shiny application provides an interactive analysis of C:N:P stoichiometry using data from the Hawaii Ocean Time-series. The app allows users to explore relationships between carbon, nitrogen, and phosphorus in the euphotic zone at different ocean depths and across seasons through various visualizations.
@@ -71,7 +79,6 @@ head(phosphorus_data)
 
 The C,N and P datasets are joined by the crn (cruise number) column using inner_join from **lubridate** to create a comprehensive C:N:P dataset. Duplicate columns such as 'julian' and 'date' are removed.
 
-
 ```{r}
 
 # join all datasets
@@ -90,6 +97,7 @@ head(CNP_data)
 <br>
 
 #### Season column added
+
 Then a seasons column is made using the months from the date and the lubridate package.
 
 ```{r}
@@ -110,12 +118,12 @@ head(CNP_data)
 
 ```
 
-
 <br>
 
 ## Plot
 
 ### Heatmap
+
 ```{r}
 
 ggplot(CNP_data, aes(x = c_deep_mean, y = n_deep_mean)) +
@@ -127,6 +135,7 @@ ggplot(CNP_data, aes(x = c_deep_mean, y = n_deep_mean)) +
 ```
 
 ### Box Plot
+
 ```{r}
 deep_data <- CNP_data %>%
   select(c_shallow_mean, n_deep_mean, p_deep_mean) %>%
@@ -158,7 +167,7 @@ Below is the complete Shiny app implementation.
 
 ### UI
 
-The app's user interface includes three sections using **ui<-fluidPage()** : Heatmap, Box Plot, and C:N:P averages.
+The app's user interface includes three sections using **ui\<-fluidPage()** : Heatmap, Box Plot, and C:N:P averages.
 
 ```{r}
 
@@ -375,4 +384,3 @@ server <- function(input, output) {
 ### shinyApp(ui = ui, server = server) - run the app ###
 
 ```
-
